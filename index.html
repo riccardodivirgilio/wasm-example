@@ -2,100 +2,39 @@
 
 
 <script>
-let Module = null
-const FPDF = {
-    ANNOT: 0x01, // Set if annotations are to be rendered.
-    LCD_TEXT: 0x02, // Set if using text rendering optimized for LCD display.
-    NO_NATIVETEXT: 0x04, // Don't use the native text output available on some platforms
-    GRAYSCALE: 0x08, // Grayscale output.
-    DEBUG_INFO: 0x80, // Set if you want to get some debug info. Please discuss with Foxit first if you need to collect debug info.
-    NO_CATCH: 0x100, // Set if you don't want to catch exception.
-    RENDER_LIMITEDIMAGECACHE: 0x200, // Limit image cache size.
-    RENDER_FORCEHALFTONE: 0x400, // Always use halftone for image stretching.
-    PRINTING: 0x800, // Render for printing.
-    REVERSE_BYTE_ORDER: 0x10, // Set whether render in a reverse Byte order, this flag only.
-    Bitmap_Gray: 1,
-    Bitmap_BGR: 2,
-    Bitmap_BGRx: 3,
-    Bitmap_BGRA: 4,
-    LAST_ERROR: {
-        // Last error types
-        SUCCESS: 0,
-        UNKNOWN: 1,
-        FILE: 2,
-        FORMAT: 3,
-        PASSWORD: 4,
-        SECURITY: 5,
-        PAGE: 6
-    }
-}
 
-const heap = (J, s) => {
-    let E
-    switch (J) {
-        case Int8Array:
-            E = Module.HEAP8
-            break
-        case Int16Array:
-            E = Module.HEAP16
-            break
-        case Int32Array:
-            E = Module.HEAP32
-            break
-        case Uint8Array:
-            E = Module.HEAPU8
-            break
-        case Uint16Array:
-            E = Module.HEAPU16
-            break
-        case Uint32Array:
-            E = Module.HEAPU32
-            break
-        case Float32Array:
-            E = Module.HEAPF32
-            break
-        case Float64Array:
-            E = Module.HEAPF64
-            break
-    }
-    const Z = J.BYTES_PER_ELEMENT
-    const m = Module._malloc(s * Z)
-    const a = Array(1 + s)
-    a[0] = {
-        s,
-        J,
-        Z,
-        E,
-        m,
-        free: () => Module._free(m)
-    }
-    for (let i = 0; i < s; i++)
-        a[i + 1] = {
-            p: m + i * Z,
-            get v() {
-                return E[m / Z + i]
-            }
+// runtime initialized
+PDFiumModule().then(function (WASM) {
+
+    const FPDF = {
+        ANNOT: 0x01, // Set if annotations are to be rendered.
+        LCD_TEXT: 0x02, // Set if using text rendering optimized for LCD display.
+        NO_NATIVETEXT: 0x04, // Don't use the native text output available on some platforms
+        GRAYSCALE: 0x08, // Grayscale output.
+        DEBUG_INFO: 0x80, // Set if you want to get some debug info. Please discuss with Foxit first if you need to collect debug info.
+        NO_CATCH: 0x100, // Set if you don't want to catch exception.
+        RENDER_LIMITEDIMAGECACHE: 0x200, // Limit image cache size.
+        RENDER_FORCEHALFTONE: 0x400, // Always use halftone for image stretching.
+        PRINTING: 0x800, // Render for printing.
+        REVERSE_BYTE_ORDER: 0x10, // Set whether render in a reverse Byte order, this flag only.
+        Bitmap_Gray: 1,
+        Bitmap_BGR: 2,
+        Bitmap_BGRx: 3,
+        Bitmap_BGRA: 4,
+        LAST_ERROR: {
+            // Last error types
+            SUCCESS: 0,
+            UNKNOWN: 1,
+            FILE: 2,
+            FORMAT: 3,
+            PASSWORD: 4,
+            SECURITY: 5,
+            PAGE: 6
         }
-    return a
-}
-
-const H = (t, s, d) => f => {
-    const [m, ...a] = heap(t, s)
-    const v = f(...a.map(x => x.p))
-
-    if (!v) {
-        m.free()
-        return d
     }
 
-    const r = a.map(x => x.v)
-    m.free()
-    return r
-}
-
-function initializeFPDF() {
-    FPDF.PDFium_Init = Module.cwrap("PDFium_Init")
-    FPDF.FPDF_RenderPageBitmap = Module.cwrap("FPDF_RenderPageBitmap", "", [
+    FPDF.PDFium_Init = WASM.cwrap("PDFium_Init")
+    FPDF.FPDF_RenderPageBitmap = WASM.cwrap("FPDF_RenderPageBitmap", "", [
         "number",
         "number",
         "number",
@@ -106,7 +45,7 @@ function initializeFPDF() {
         "number"
     ])
 
-    FPDF.FPDFBitmap_FillRect = Module.cwrap("FPDFBitmap_FillRect", "", [
+    FPDF.FPDFBitmap_FillRect = WASM.cwrap("FPDFBitmap_FillRect", "", [
         "number",
         "number",
         "number",
@@ -114,50 +53,50 @@ function initializeFPDF() {
         "number",
         "number"
     ])
-    FPDF.FPDFBitmap_CreateEx = Module.cwrap("FPDFBitmap_CreateEx", "number", [
+    FPDF.FPDFBitmap_CreateEx = WASM.cwrap("FPDFBitmap_CreateEx", "number", [
         "number",
         "number",
         "number",
         "number",
         "number"
     ])
-    FPDF.FPDFBitmap_Destroy = Module.cwrap("FPDFBitmap_Destroy", "", ["number"])
+    FPDF.FPDFBitmap_Destroy = WASM.cwrap("FPDFBitmap_Destroy", "", ["number"])
 
-    FPDF.FPDF_LoadPage = Module.cwrap("FPDF_LoadPage", "number", ["number", "number"])
-    FPDF.FPDF_ClosePage = Module.cwrap("FPDF_ClosePage", "", ["number"])
+    FPDF.FPDF_LoadPage = WASM.cwrap("FPDF_LoadPage", "number", ["number", "number"])
+    FPDF.FPDF_ClosePage = WASM.cwrap("FPDF_ClosePage", "", ["number"])
 
-    FPDF.FPDF_LoadMemDocument = Module.cwrap("FPDF_LoadMemDocument", "number", [
+    FPDF.FPDF_LoadMemDocument = WASM.cwrap("FPDF_LoadMemDocument", "number", [
         "number",
         "number",
         "string"
     ])
-    FPDF.FPDF_GetPageSizeByIndex = Module.cwrap("FPDF_GetPageSizeByIndex", "number", [
+    FPDF.FPDF_GetPageSizeByIndex = WASM.cwrap("FPDF_GetPageSizeByIndex", "number", [
         "number",
         "number",
         "number",
         "number"
     ])
-    FPDF.FPDF_GetLastError = Module.cwrap("FPDF_GetLastError", "number")
-    FPDF.FPDF_GetPageCount = Module.cwrap("FPDF_GetPageCount", "number", ["number"])
-    FPDF.FPDF_CloseDocument = Module.cwrap("FPDF_CloseDocument", "", ["number"])
-    FPDF.FPDF_DestroyLibrary = Module.cwrap("FPDF_DestroyLibrary")
+    FPDF.FPDF_GetLastError = WASM.cwrap("FPDF_GetLastError", "number")
+    FPDF.FPDF_GetPageCount = WASM.cwrap("FPDF_GetPageCount", "number", ["number"])
+    FPDF.FPDF_CloseDocument = WASM.cwrap("FPDF_CloseDocument", "", ["number"])
+    FPDF.FPDF_DestroyLibrary = WASM.cwrap("FPDF_DestroyLibrary")
 
     FPDF.boxes = {
-        bleed: Module.cwrap("FPDFPage_GetBleedBox", "number", [
+        bleed: WASM.cwrap("FPDFPage_GetBleedBox", "number", [
             "number",
             "number",
             "number",
             "number",
             "number"
         ]),
-        media: Module.cwrap("FPDFPage_GetMediaBox", "number", [
+        media: WASM.cwrap("FPDFPage_GetMediaBox", "number", [
             "number",
             "number",
             "number",
             "number",
             "number"
         ]),
-        crop: Module.cwrap("FPDFPage_GetCropBox", "number", [
+        crop: WASM.cwrap("FPDFPage_GetCropBox", "number", [
             "number",
             "number",
             "number",
@@ -165,108 +104,165 @@ function initializeFPDF() {
             "number"
         ])
     }
-}
-
-function get_last_error() {
-    let last_error = FPDF.FPDF_GetLastError()
-
-    switch (last_error) {
-        case FPDF.LAST_ERROR.SUCCESS:
-            return "success"
-            break
-        case FPDF.LAST_ERROR.UNKNOWN:
-            return "unknown error"
-            break
-        case FPDF.LAST_ERROR.FILE:
-            return "file not found or could not be opened"
-            break
-        case FPDF.LAST_ERROR.FORMAT:
-            return "file not in PDF format or corrupted"
-            break
-        case FPDF.LAST_ERROR.PASSWORD:
-            return "password required or incorrect password"
-            break
-        case FPDF.LAST_ERROR.SECURITY:
-            return "unsupported security scheme"
-            break
-        case FPDF.LAST_ERROR.PAGE:
-            return "page not found or content error"
-            break
-        default:
-            return "unknown error"
-    }
-}
-
-function get_page_size(doc, i, s = 2) {
-    return H(
-        Float64Array,
-        2,
-        [-1, -1]
-    )((w, h) => FPDF.FPDF_GetPageSizeByIndex(doc, i, w, h)).map(v => parseInt(v) * s)
-}
-
-function get_box(doc, page, box) {
-    return H(
-        Float32Array,
-        4,
-        [-1, -1]
-    )((a, b, c, d) => FPDF.boxes[box](page, a, b, c, d)).map(v => v)
-}
-
-function get_page_bitmap(doc, i, w, h) {
-    const pageRenderPtr = Module._malloc(w * h * 4)
-
-    for (let i = 0; i < w * h * 4; i++) {
-        Module.HEAPU8[pageRenderPtr + i] = 0
+    const heap = (J, s) => {
+        let E
+        switch (J) {
+            case Int8Array:
+                E = WASM.HEAP8
+                break
+            case Int16Array:
+                E = WASM.HEAP16
+                break
+            case Int32Array:
+                E = WASM.HEAP32
+                break
+            case Uint8Array:
+                E = WASM.HEAPU8
+                break
+            case Uint16Array:
+                E = WASM.HEAPU16
+                break
+            case Uint32Array:
+                E = WASM.HEAPU32
+                break
+            case Float32Array:
+                E = WASM.HEAPF32
+                break
+            case Float64Array:
+                E = WASM.HEAPF64
+                break
+        }
+        const Z = J.BYTES_PER_ELEMENT
+        const m = WASM._malloc(s * Z)
+        const a = Array(1 + s)
+        a[0] = {
+            s,
+            J,
+            Z,
+            E,
+            m,
+            free: () => WASM._free(m)
+        }
+        for (let i = 0; i < s; i++)
+            a[i + 1] = {
+                p: m + i * Z,
+                get v() {
+                    return E[m / Z + i]
+                }
+            }
+        return a
     }
 
-    const bmap = FPDF.FPDFBitmap_CreateEx(w, h, FPDF.Bitmap_BGRA, pageRenderPtr, w * 4)
-    const page = FPDF.FPDF_LoadPage(doc, i)
+    const H = (t, s, d) => f => {
+        const [m, ...a] = heap(t, s)
+        const v = f(...a.map(x => x.p))
 
-    console.log("bleed", get_box(doc, page, "bleed"))
-    console.log("media", get_box(doc, page, "media"))
-    console.log("crop", get_box(doc, page, "crop"))
+        if (!v) {
+            m.free()
+            return d
+        }
 
-    FPDF.FPDFBitmap_FillRect(bmap, 0, 0, w, h, 0xffffffff)
-    FPDF.FPDF_RenderPageBitmap(bmap, page, 0, 0, w, h, 0, FPDF.REVERSE_BYTE_ORDER | FPDF.ANNOT)
-    FPDF.FPDFBitmap_Destroy(bmap)
-    FPDF.FPDF_ClosePage(page)
-
-    let raster = []
-
-    for (let v = 0; v < w * h * 4; v++) {
-        raster.push(Module.HEAPU8[pageRenderPtr + v])
+        const r = a.map(x => x.v)
+        m.free()
+        return r
     }
 
-    Module._free(pageRenderPtr)
+    
+    function get_last_error() {
+        let last_error = FPDF.FPDF_GetLastError()
 
-    return raster
-}
+        switch (last_error) {
+            case FPDF.LAST_ERROR.SUCCESS:
+                return "success"
+                break
+            case FPDF.LAST_ERROR.UNKNOWN:
+                return "unknown error"
+                break
+            case FPDF.LAST_ERROR.FILE:
+                return "file not found or could not be opened"
+                break
+            case FPDF.LAST_ERROR.FORMAT:
+                return "file not in PDF format or corrupted"
+                break
+            case FPDF.LAST_ERROR.PASSWORD:
+                return "password required or incorrect password"
+                break
+            case FPDF.LAST_ERROR.SECURITY:
+                return "unsupported security scheme"
+                break
+            case FPDF.LAST_ERROR.PAGE:
+                return "page not found or content error"
+                break
+            default:
+                return "unknown error"
+        }
+    }
 
-function render(doc, i = 0, scale = 1.0) {
-    const [w, h] = get_page_size(doc, i, scale)
-    const raster = get_page_bitmap(doc, i, w, h)
+    function get_page_size(doc, i, s = 2) {
+        return H(
+            Float64Array,
+            2,
+            [-1, -1]
+        )((w, h) => FPDF.FPDF_GetPageSizeByIndex(doc, i, w, h)).map(v => parseInt(v) * s)
+    }
 
-    const canvas = document.createElement("canvas")
-    canvas.width = w
-    canvas.height = h
+    function get_box(doc, page, box) {
+        return H(
+            Float32Array,
+            4,
+            [-1, -1]
+        )((a, b, c, d) => FPDF.boxes[box](page, a, b, c, d)).map(v => v)
+    }
 
-    const context = canvas.getContext("2d")
+    function get_page_bitmap(doc, i, w, h) {
+        const pageRenderPtr = WASM._malloc(w * h * 4)
 
-    //const i = x.createImageData(w, h);
-    const image = new ImageData(w, h)
+        for (let i = 0; i < w * h * 4; i++) {
+            WASM.HEAPU8[pageRenderPtr + i] = 0
+        }
 
-    image.data.set(raster)
-    context.putImageData(image, 0, 0)
+        const bmap = FPDF.FPDFBitmap_CreateEx(w, h, FPDF.Bitmap_BGRA, pageRenderPtr, w * 4)
+        const page = FPDF.FPDF_LoadPage(doc, i)
 
-    return canvas
-}
+        console.log("bleed", get_box(doc, page, "bleed"))
+        console.log("media", get_box(doc, page, "media"))
+        console.log("crop", get_box(doc, page, "crop"))
 
-// runtime initialized
-PDFiumModule().then(function (m) {
-    Module = m
+        FPDF.FPDFBitmap_FillRect(bmap, 0, 0, w, h, 0xffffffff)
+        FPDF.FPDF_RenderPageBitmap(bmap, page, 0, 0, w, h, 0, FPDF.REVERSE_BYTE_ORDER | FPDF.ANNOT)
+        FPDF.FPDFBitmap_Destroy(bmap)
+        FPDF.FPDF_ClosePage(page)
 
-    initializeFPDF()
+        let raster = []
+
+        for (let v = 0; v < w * h * 4; v++) {
+            raster.push(WASM.HEAPU8[pageRenderPtr + v])
+        }
+
+        WASM._free(pageRenderPtr)
+
+        return raster
+    }
+
+    function render(doc, i = 0, scale = 1.0) {
+        const [w, h] = get_page_size(doc, i, scale)
+        const raster = get_page_bitmap(doc, i, w, h)
+
+        const canvas = document.createElement("canvas")
+        canvas.width = w
+        canvas.height = h
+
+        const context = canvas.getContext("2d")
+
+        //const i = x.createImageData(w, h);
+        const image = new ImageData(w, h)
+
+        image.data.set(raster)
+        context.putImageData(image, 0, 0)
+
+        return canvas
+    }
+
 
 
     function process_pdf_from_bytes(bytearray) {
@@ -282,8 +278,8 @@ PDFiumModule().then(function (m) {
         // load document to memory
         console.log("Loading data to buffer...")
 
-        const buffer = Module._malloc(bytearray.length)
-        Module.HEAPU8.set(bytearray, buffer)
+        const buffer = WASM._malloc(bytearray.length)
+        WASM.HEAPU8.set(bytearray, buffer)
 
         // create document
         console.log("Loading document...")
@@ -318,7 +314,7 @@ PDFiumModule().then(function (m) {
         // clean memory
         console.log("Cleaning objects...")
 
-        Module._free(buffer)
+        WASM._free(buffer)
 
         FPDF.FPDF_CloseDocument(doc)
         FPDF.FPDF_DestroyLibrary()
@@ -329,7 +325,6 @@ PDFiumModule().then(function (m) {
     function process_pdf_from_url(url) {
         return fetch(url).then(r => r.arrayBuffer()).then(r => new Uint8Array(r)).then(r => process_pdf_from_bytes(r))
     }
-
 
     process_pdf_from_url("https://pdf-lib.js.org/assets/dod_character.pdf")
 })
