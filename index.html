@@ -4,7 +4,7 @@
 <script>
 
 // runtime initialized
-PDFiumModule().then(function (WASM) {
+PDFiumModule().then(WASM => {
 
     const FPDF = {
         ANNOT: 0x01, // Set if annotations are to be rendered.
@@ -30,80 +30,77 @@ PDFiumModule().then(function (WASM) {
             PASSWORD: 4,
             SECURITY: 5,
             PAGE: 6
+        },
+        PDFium_Init : WASM.cwrap("PDFium_Init"),
+        FPDF_RenderPageBitmap : WASM.cwrap("FPDF_RenderPageBitmap", "", [
+            "number",
+            "number",
+            "number",
+            "number",
+            "number",
+            "number",
+            "number",
+            "number"
+        ]),
+        FPDFBitmap_FillRect : WASM.cwrap("FPDFBitmap_FillRect", "", [
+            "number",
+            "number",
+            "number",
+            "number",
+            "number",
+            "number"
+        ]),
+        FPDFBitmap_CreateEx : WASM.cwrap("FPDFBitmap_CreateEx", "number", [
+            "number",
+            "number",
+            "number",
+            "number",
+            "number"
+        ]),
+        FPDFBitmap_Destroy : WASM.cwrap("FPDFBitmap_Destroy", "", ["number"]),
+        FPDF_LoadPage : WASM.cwrap("FPDF_LoadPage", "number", ["number", "number"]),
+        FPDF_ClosePage : WASM.cwrap("FPDF_ClosePage", "", ["number"]),
+        FPDF_LoadMemDocument : WASM.cwrap("FPDF_LoadMemDocument", "number", [
+            "number",
+            "number",
+            "string"
+        ]),
+        FPDF_GetPageSizeByIndex : WASM.cwrap("FPDF_GetPageSizeByIndex", "number", [
+            "number",
+            "number",
+            "number",
+            "number"
+        ]),
+        FPDF_GetLastError : WASM.cwrap("FPDF_GetLastError", "number"),
+        FPDF_GetPageCount : WASM.cwrap("FPDF_GetPageCount", "number", ["number"]),
+        FPDF_CloseDocument : WASM.cwrap("FPDF_CloseDocument", "", ["number"]),
+        FPDF_DestroyLibrary : WASM.cwrap("FPDF_DestroyLibrary"),
+        BOXES : {
+            bleed: WASM.cwrap("FPDFPage_GetBleedBox", "number", [
+                "number",
+                "number",
+                "number",
+                "number",
+                "number"
+            ]),
+            media: WASM.cwrap("FPDFPage_GetMediaBox", "number", [
+                "number",
+                "number",
+                "number",
+                "number",
+                "number"
+            ]),
+            crop: WASM.cwrap("FPDFPage_GetCropBox", "number", [
+                "number",
+                "number",
+                "number",
+                "number",
+                "number"
+            ])
         }
     }
 
-    FPDF.PDFium_Init = WASM.cwrap("PDFium_Init")
-    FPDF.FPDF_RenderPageBitmap = WASM.cwrap("FPDF_RenderPageBitmap", "", [
-        "number",
-        "number",
-        "number",
-        "number",
-        "number",
-        "number",
-        "number",
-        "number"
-    ])
 
-    FPDF.FPDFBitmap_FillRect = WASM.cwrap("FPDFBitmap_FillRect", "", [
-        "number",
-        "number",
-        "number",
-        "number",
-        "number",
-        "number"
-    ])
-    FPDF.FPDFBitmap_CreateEx = WASM.cwrap("FPDFBitmap_CreateEx", "number", [
-        "number",
-        "number",
-        "number",
-        "number",
-        "number"
-    ])
-    FPDF.FPDFBitmap_Destroy = WASM.cwrap("FPDFBitmap_Destroy", "", ["number"])
-
-    FPDF.FPDF_LoadPage = WASM.cwrap("FPDF_LoadPage", "number", ["number", "number"])
-    FPDF.FPDF_ClosePage = WASM.cwrap("FPDF_ClosePage", "", ["number"])
-
-    FPDF.FPDF_LoadMemDocument = WASM.cwrap("FPDF_LoadMemDocument", "number", [
-        "number",
-        "number",
-        "string"
-    ])
-    FPDF.FPDF_GetPageSizeByIndex = WASM.cwrap("FPDF_GetPageSizeByIndex", "number", [
-        "number",
-        "number",
-        "number",
-        "number"
-    ])
-    FPDF.FPDF_GetLastError = WASM.cwrap("FPDF_GetLastError", "number")
-    FPDF.FPDF_GetPageCount = WASM.cwrap("FPDF_GetPageCount", "number", ["number"])
-    FPDF.FPDF_CloseDocument = WASM.cwrap("FPDF_CloseDocument", "", ["number"])
-    FPDF.FPDF_DestroyLibrary = WASM.cwrap("FPDF_DestroyLibrary")
-
-    FPDF.boxes = {
-        bleed: WASM.cwrap("FPDFPage_GetBleedBox", "number", [
-            "number",
-            "number",
-            "number",
-            "number",
-            "number"
-        ]),
-        media: WASM.cwrap("FPDFPage_GetMediaBox", "number", [
-            "number",
-            "number",
-            "number",
-            "number",
-            "number"
-        ]),
-        crop: WASM.cwrap("FPDFPage_GetCropBox", "number", [
-            "number",
-            "number",
-            "number",
-            "number",
-            "number"
-        ])
-    }
     const heap = (J, s) => {
         let E
         switch (J) {
@@ -211,7 +208,7 @@ PDFiumModule().then(function (WASM) {
             Float32Array,
             4,
             [-1, -1]
-        )((a, b, c, d) => FPDF.boxes[box](page, a, b, c, d)).map(v => v)
+        )((a, b, c, d) => FPDF.BOXES[box](page, a, b, c, d)).map(v => v)
     }
 
     function get_page_bitmap(doc, i, w, h) {
