@@ -319,7 +319,7 @@ PDFiumModule().then(WASM => {
         return fetch(url).then(r => r.arrayBuffer()).then(r => new Uint8Array(r)).then(r => process_pdf_from_bytes(r))
     }
 
-    process_pdf_from_url("https://pdf-lib.js.org/assets/dod_character.pdf")
+    process_pdf_from_url("/dod_character.pdf")
 })
 
 
