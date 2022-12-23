@@ -134,6 +134,7 @@ function initializeFPDF() {
     FPDF.CloseDocument = Module.cwrap('FPDF_CloseDocument', '', ['number']);
     FPDF.DestroyLibrary = Module.cwrap('FPDF_DestroyLibrary');
 
+    //FPDF.GetTrimBox = Module.cwrap('FPDFPage_GetTrimBox');
 
 }
 
@@ -141,12 +142,12 @@ function initializeFPDF() {
 
 
 class Processor {
-    constructor(wasmData) {
-        this.wasmData = wasmData;
+    constructor(doc) {
+        this.doc = doc;
     }
 
     getPageSize(i = 0, s = 2) {
-        return H(F64, 2, [-1, -1])((w, h) => FPDF.GetPageSizeByIndex(this.wasmData.wasm, i, w, h)).map(v => parseInt(v) * s);
+        return H(F64, 2, [-1, -1])((w, h) => FPDF.GetPageSizeByIndex(this.doc, i, w, h)).map(v => parseInt(v) * s);
     }
 
     getRender(i = 0, w, h) {
@@ -159,7 +160,7 @@ class Processor {
         }
 
         const bmap = FPDF.Bitmap_CreateEx(w, h, FPDF.Bitmap_BGRA, heap, w * 4);
-        const page = FPDF.LoadPage(this.wasmData.wasm, i);
+        const page = FPDF.LoadPage(this.doc, i);
 
         FPDF.Bitmap_FillRect(bmap, 0, 0, w, h, 0xFFFFFFFF);
         FPDF.RenderPageBitmap(bmap, page, 0, 0, w, h, 0, FPDF.REVERSE_BYTE_ORDER | FPDF.ANNOT);
@@ -182,18 +183,28 @@ class Processor {
         return pageRenderData;
     }
 
-    render(n = 0, canvas, scale, rotation) {
-        const [w, h] = this.getPageSize(n, scale, rotation);
-        const data = this.getPageRender(n, w, h, rotation);
+    render(n = 0, scale = 1.0) {
 
 
+        
+        const [w, h] = this.getPageSize(n, scale);
+        const data = this.getPageRender(n, w, h);
+
+        const canvas = document.createElement('canvas');
         canvas.width = w;
         canvas.height = h;
 
         const x = canvas.getContext('2d');
-        const i = x.createImageData(w, h);
+
+        console.log('getContext', x)
+
+        //const i = x.createImageData(w, h);
+        const i = new ImageData(w, h);
+
         i.data.set(data);
         x.putImageData(i, 0, 0);
+
+        return canvas
     }
 
     getLastError() {
@@ -271,10 +282,7 @@ PDFiumModule().then(function(pdfiumModule) {
         const doc = FPDF.LoadMemDocument(wasmBuffer, fileByteArray.length, "")
 
 
-        const processor = new Processor({
-            wasm: doc,
-            wasmBuffer: wasmBuffer,
-        })
+        const processor = new Processor(doc, wasmBuffer)
 
 
 
@@ -300,10 +308,8 @@ PDFiumModule().then(function(pdfiumModule) {
             console.log('Page ' + (x + 1));
 
 
-            let canvas = document.createElement('canvas');
-            processor.render(x, canvas, 3.0, 90);
-
-            canvas.toBlob(b => {
+            
+            processor.render(x, scale = 2).toBlob(b => {
 
 
                 const url = URL.createObjectURL(b)
@@ -312,8 +318,6 @@ PDFiumModule().then(function(pdfiumModule) {
                 var img = document.createElement('img');
                 img.setAttribute('src', url)
                 document.body.appendChild(img);
-
-
 
             })
         }
