@@ -109,22 +109,7 @@
         }
 
 
-        // classes
-        class Page {
-            constructor(index, processor) {
-                this.index = index;
-                this.src = null;
-                this.processor = processor;
-            }
 
-            render() {
-                let canvas = document.createElement('canvas');
-                this.processor.render(this.index, canvas, 3.0, 90);
-                return canvas
-
-            }
-
-        }
 
 
         class Processor {
@@ -214,36 +199,6 @@
             }
         }
 
-        class Doc {
-            constructor(wasmData) {
-                this.processor = new Processor(wasmData);
-            }
-
-            setPages(pagesCount) {
-                this.pages = Array(pagesCount).fill(null);
-            }
-
-            createAllPages() {
-                for (let i = 0; i < this.pages.length; i++) {
-                    this.pages[i] = new Page(i, this.processor);
-                }
-            }
-
-            getPage(index) {
-                let page = this.pages[index];
-
-                if (!page) {
-                    page = new Page(index);
-                    this.pages[index] = page;
-                }
-
-                return page;
-            }
-
-
-        }
-
-
         // runtime initialized
         PDFiumModule().then(function (pdfiumModule) {
             Module = pdfiumModule;
@@ -287,44 +242,56 @@
                 // create document
                 console.log('Loading document...');
 
-                doc = new Doc({
+
+                const wasmData = {
                     wasm: FPDF.LoadMemDocument(wasmBuffer, fileSize, ""),
                     wasmBuffer: wasmBuffer,
-                });
+                }
+
+                const processor= new Processor(wasmData)
+
+
 
                 // check last error
-                let lastError = doc.processor.getLastError();
+                let lastError = processor.getLastError();
                 console.log("Load document state: " + lastError);
 
                 // count page
                 console.log('Couting pages...');
 
-                let pages = FPDF.GetPageCount(doc.processor.wasmData.wasm);
-                console.log('Pages: ' + pages);
-
-                 console.log('Rendering ' + pages + ' PDF pages...');
-
-                    doc.setPages(pages);
-                    doc.createAllPages();
-
-                    for (let x = 0; x < pages; x++) {
-
-                        console.log('Page ' + (x + 1));
-
-                        doc.getPage(x).render().toBlob(b => {
+                let page_count = FPDF.GetPageCount(wasmData.wasm);
 
 
-                          const url = URL.createObjectURL(b)
-                          console.log('RENDER', url)
+                console.log('Pages: ' + page_count);
 
-                          var img = document.createElement('img');
-                          img.setAttribute('src', url)
-                          document.body.appendChild(img);
+
+                const page_array = []
 
 
 
-                        })
-                    }
+
+                for (let x = 0; x < page_count; x++) {
+
+                    console.log('Page ' + (x + 1));
+
+
+                    let canvas = document.createElement('canvas');
+                    processor.render(x, canvas, 3.0, 90);
+
+                    canvas.toBlob(b => {
+
+
+                      const url = URL.createObjectURL(b)
+                      console.log('RENDER', url)
+
+                      var img = document.createElement('img');
+                      img.setAttribute('src', url)
+                      document.body.appendChild(img);
+
+
+
+                    })
+                }
 
                 // clean memory
                 console.log('Cleaning objects...');
