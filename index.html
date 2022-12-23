@@ -2,8 +2,7 @@
 
 
 <script>
-
-let Module = null;
+let Module = null
 const FPDF = {
     ANNOT: 0x01, // Set if annotations are to be rendered.
     LCD_TEXT: 0x02, // Set if using text rendering optimized for LCD display.
@@ -19,7 +18,8 @@ const FPDF = {
     Bitmap_BGR: 2,
     Bitmap_BGRx: 3,
     Bitmap_BGRA: 4,
-    LAST_ERROR: { // Last error types
+    LAST_ERROR: {
+        // Last error types
         SUCCESS: 0,
         UNKNOWN: 1,
         FILE: 2,
@@ -28,297 +28,314 @@ const FPDF = {
         SECURITY: 5,
         PAGE: 6
     }
-};
-
-
+}
 
 const heap = (J, s) => {
-    let E;
+    let E
     switch (J) {
         case Int8Array:
-            E = Module.HEAP8;
-            break;
+            E = Module.HEAP8
+            break
         case Int16Array:
-            E = Module.HEAP16;
-            break;
+            E = Module.HEAP16
+            break
         case Int32Array:
-            E = Module.HEAP32;
-            break;
+            E = Module.HEAP32
+            break
         case Uint8Array:
-            E = Module.HEAPU8;
-            break;
+            E = Module.HEAPU8
+            break
         case Uint16Array:
-            E = Module.HEAPU16;
-            break;
+            E = Module.HEAPU16
+            break
         case Uint32Array:
-            E = Module.HEAPU32;
-            break;
+            E = Module.HEAPU32
+            break
         case Float32Array:
-            E = Module.HEAPF32;
-            break;
+            E = Module.HEAPF32
+            break
         case Float64Array:
-            E = Module.HEAPF64;
-            break;
+            E = Module.HEAPF64
+            break
     }
-    const Z = J.BYTES_PER_ELEMENT;
-    const m = Module._malloc(s * Z);
-    const a = Array(1 + s);
-    a[0] = ({
+    const Z = J.BYTES_PER_ELEMENT
+    const m = Module._malloc(s * Z)
+    const a = Array(1 + s)
+    a[0] = {
         s,
         J,
         Z,
         E,
         m,
         free: () => Module._free(m)
-    });
-    for (let i = 0; i < s; i++) a[i + 1] = ({
-        p: m + (i * Z),
-        get v() {
-            return E[m / Z + i];
+    }
+    for (let i = 0; i < s; i++)
+        a[i + 1] = {
+            p: m + i * Z,
+            get v() {
+                return E[m / Z + i]
+            }
         }
-    });
-    return a;
-};
-
-const H = (t, s, d) => f => {
-    const [m, ...a] = heap(t, s);
-    const v = f(...a.map(x => x.p));
-
-    if (!v) {
-        m.free();
-        return d;
-    }
-
-    const r = a.map(x => x.v);
-    m.free();
-    return r;
-};
-
-
-
-
-function initializeFPDF() {
-    FPDF.Init = Module.cwrap('PDFium_Init');
-    FPDF.RenderPageBitmap = Module.cwrap('FPDF_RenderPageBitmap', '', ['number', 'number', 'number', 'number', 'number', 'number', 'number', 'number']);
-
-    FPDF.Bitmap_FillRect = Module.cwrap('FPDFBitmap_FillRect', '', ['number', 'number', 'number', 'number', 'number', 'number']);
-    FPDF.Bitmap_CreateEx = Module.cwrap('FPDFBitmap_CreateEx', 'number', ['number', 'number', 'number', 'number', 'number']);
-    FPDF.Bitmap_Destroy = Module.cwrap('FPDFBitmap_Destroy', '', ['number']);
-
-    FPDF.LoadPage = Module.cwrap('FPDF_LoadPage', 'number', ['number', 'number']);
-    FPDF.ClosePage = Module.cwrap('FPDF_ClosePage', '', ['number']);
-
-    FPDF.LoadMemDocument = Module.cwrap('FPDF_LoadMemDocument', 'number', ['number', 'number', 'string']);
-    FPDF.GetPageSizeByIndex = Module.cwrap('FPDF_GetPageSizeByIndex', 'number', ['number', 'number', 'number', 'number']);
-    FPDF.GetLastError = Module.cwrap('FPDF_GetLastError', 'number');
-    FPDF.GetPageCount = Module.cwrap('FPDF_GetPageCount', 'number', ['number']);
-    FPDF.CloseDocument = Module.cwrap('FPDF_CloseDocument', '', ['number']);
-    FPDF.DestroyLibrary = Module.cwrap('FPDF_DestroyLibrary');
-
-
-    FPDF.boxes = {
-        'bleed': Module.cwrap('FPDFPage_GetBleedBox', 'number', ['number', 'number', 'number', 'number', 'number']),
-        'media': Module.cwrap('FPDFPage_GetMediaBox', 'number', ['number', 'number', 'number', 'number', 'number']),
-        'crop':  Module.cwrap('FPDFPage_GetCropBox',  'number', ['number', 'number', 'number', 'number', 'number']),
-    }
-
-
+    return a
 }
 
+const H = (t, s, d) => f => {
+    const [m, ...a] = heap(t, s)
+    const v = f(...a.map(x => x.p))
+
+    if (!v) {
+        m.free()
+        return d
+    }
+
+    const r = a.map(x => x.v)
+    m.free()
+    return r
+}
+
+function initializeFPDF() {
+    FPDF.Init = Module.cwrap("PDFium_Init")
+    FPDF.RenderPageBitmap = Module.cwrap("FPDF_RenderPageBitmap", "", [
+        "number",
+        "number",
+        "number",
+        "number",
+        "number",
+        "number",
+        "number",
+        "number"
+    ])
+
+    FPDF.Bitmap_FillRect = Module.cwrap("FPDFBitmap_FillRect", "", [
+        "number",
+        "number",
+        "number",
+        "number",
+        "number",
+        "number"
+    ])
+    FPDF.Bitmap_CreateEx = Module.cwrap("FPDFBitmap_CreateEx", "number", [
+        "number",
+        "number",
+        "number",
+        "number",
+        "number"
+    ])
+    FPDF.Bitmap_Destroy = Module.cwrap("FPDFBitmap_Destroy", "", ["number"])
+
+    FPDF.LoadPage = Module.cwrap("FPDF_LoadPage", "number", ["number", "number"])
+    FPDF.ClosePage = Module.cwrap("FPDF_ClosePage", "", ["number"])
+
+    FPDF.LoadMemDocument = Module.cwrap("FPDF_LoadMemDocument", "number", [
+        "number",
+        "number",
+        "string"
+    ])
+    FPDF.GetPageSizeByIndex = Module.cwrap("FPDF_GetPageSizeByIndex", "number", [
+        "number",
+        "number",
+        "number",
+        "number"
+    ])
+    FPDF.GetLastError = Module.cwrap("FPDF_GetLastError", "number")
+    FPDF.GetPageCount = Module.cwrap("FPDF_GetPageCount", "number", ["number"])
+    FPDF.CloseDocument = Module.cwrap("FPDF_CloseDocument", "", ["number"])
+    FPDF.DestroyLibrary = Module.cwrap("FPDF_DestroyLibrary")
+
+    FPDF.boxes = {
+        bleed: Module.cwrap("FPDFPage_GetBleedBox", "number", [
+            "number",
+            "number",
+            "number",
+            "number",
+            "number"
+        ]),
+        media: Module.cwrap("FPDFPage_GetMediaBox", "number", [
+            "number",
+            "number",
+            "number",
+            "number",
+            "number"
+        ]),
+        crop: Module.cwrap("FPDFPage_GetCropBox", "number", [
+            "number",
+            "number",
+            "number",
+            "number",
+            "number"
+        ])
+    }
+}
 
 function getLastError() {
-    let lastError = FPDF.GetLastError();
+    let lastError = FPDF.GetLastError()
 
     switch (lastError) {
         case FPDF.LAST_ERROR.SUCCESS:
-            return "success";
-            break;
+            return "success"
+            break
         case FPDF.LAST_ERROR.UNKNOWN:
-            return "unknown error";
-            break;
+            return "unknown error"
+            break
         case FPDF.LAST_ERROR.FILE:
-            return "file not found or could not be opened";
-            break;
+            return "file not found or could not be opened"
+            break
         case FPDF.LAST_ERROR.FORMAT:
-            return "file not in PDF format or corrupted";
-            break;
+            return "file not in PDF format or corrupted"
+            break
         case FPDF.LAST_ERROR.PASSWORD:
-            return "password required or incorrect password";
-            break;
+            return "password required or incorrect password"
+            break
         case FPDF.LAST_ERROR.SECURITY:
-            return "unsupported security scheme";
-            break;
+            return "unsupported security scheme"
+            break
         case FPDF.LAST_ERROR.PAGE:
-            return "page not found or content error";
-            break;
+            return "page not found or content error"
+            break
         default:
-            return "unknown error";
+            return "unknown error"
     }
 }
 
-
 function getPageSize(doc, i, s = 2) {
-    return H(Float64Array, 2, [-1, -1])((w, h) => FPDF.GetPageSizeByIndex(doc, i, w, h)).map(v => parseInt(v) * s);
+    return H(
+        Float64Array,
+        2,
+        [-1, -1]
+    )((w, h) => FPDF.GetPageSizeByIndex(doc, i, w, h)).map(v => parseInt(v) * s)
 }
 
 function get_box(doc, page, box) {
-    return H(Float32Array, 4, [-1, -1])((a, b, c, d) => FPDF.boxes[box](page, a, b, c, d)).map(v => v);
+    return H(
+        Float32Array,
+        4,
+        [-1, -1]
+    )((a, b, c, d) => FPDF.boxes[box](page, a, b, c, d)).map(v => v)
 }
 
-
-
 function getPageBitmap(doc, i, w, h) {
-
-    const pageRenderPtr = Module._malloc(w * h * 4);
+    const pageRenderPtr = Module._malloc(w * h * 4)
 
     for (let i = 0; i < w * h * 4; i++) {
-        Module.HEAPU8[pageRenderPtr + i] = 0;
+        Module.HEAPU8[pageRenderPtr + i] = 0
     }
 
-    const bmap = FPDF.Bitmap_CreateEx(w, h, FPDF.Bitmap_BGRA, pageRenderPtr, w * 4);
-    const page = FPDF.LoadPage(doc, i);
+    const bmap = FPDF.Bitmap_CreateEx(w, h, FPDF.Bitmap_BGRA, pageRenderPtr, w * 4)
+    const page = FPDF.LoadPage(doc, i)
 
-    console.log('bleed', get_box(doc, page, 'bleed'))
-    console.log('media', get_box(doc, page, 'media'))
-    console.log('crop', get_box(doc, page, 'crop'))
+    console.log("bleed", get_box(doc, page, "bleed"))
+    console.log("media", get_box(doc, page, "media"))
+    console.log("crop", get_box(doc, page, "crop"))
 
-    FPDF.Bitmap_FillRect(bmap, 0, 0, w, h, 0xFFFFFFFF);
-    FPDF.RenderPageBitmap(bmap, page, 0, 0, w, h, 0, FPDF.REVERSE_BYTE_ORDER | FPDF.ANNOT);
-    FPDF.Bitmap_Destroy(bmap);
-    FPDF.ClosePage(page);
+    FPDF.Bitmap_FillRect(bmap, 0, 0, w, h, 0xffffffff)
+    FPDF.RenderPageBitmap(bmap, page, 0, 0, w, h, 0, FPDF.REVERSE_BYTE_ORDER | FPDF.ANNOT)
+    FPDF.Bitmap_Destroy(bmap)
+    FPDF.ClosePage(page)
 
-
-    let raster = [];
+    let raster = []
 
     for (let v = 0; v < w * h * 4; v++) {
-        raster.push(Module.HEAPU8[pageRenderPtr + v]);
+        raster.push(Module.HEAPU8[pageRenderPtr + v])
     }
 
-    Module._free(pageRenderPtr);
+    Module._free(pageRenderPtr)
 
-    return raster;
+    return raster
 }
 
 function render(doc, i = 0, scale = 1.0) {
-    
-    const [w, h] = getPageSize(doc, i, scale);
-    const raster = getPageBitmap(doc, i, w, h);
+    const [w, h] = getPageSize(doc, i, scale)
+    const raster = getPageBitmap(doc, i, w, h)
 
-    const canvas = document.createElement('canvas');
-    canvas.width = w;
-    canvas.height = h;
+    const canvas = document.createElement("canvas")
+    canvas.width = w
+    canvas.height = h
 
-    const context = canvas.getContext('2d');
-
+    const context = canvas.getContext("2d")
 
     //const i = x.createImageData(w, h);
-    const image = new ImageData(w, h);
+    const image = new ImageData(w, h)
 
-    image.data.set(raster);
-    context.putImageData(image, 0, 0);
+    image.data.set(raster)
+    context.putImageData(image, 0, 0)
 
     return canvas
 }
 
 // runtime initialized
-PDFiumModule().then(function(pdfiumModule) {
-    Module = pdfiumModule;
+PDFiumModule().then(function (pdfiumModule) {
+    Module = pdfiumModule
 
     initializeFPDF()
 
-    console.log('load')
-
+    console.log("load")
 
     async function loadFileFromURL(url) {
-        let response = await fetch(url);
-        let fileBuffer = await response.arrayBuffer();
-        let fileByteArray = new Uint8Array(fileBuffer);
+        let response = await fetch(url)
+        let fileBuffer = await response.arrayBuffer()
+        let fileByteArray = new Uint8Array(fileBuffer)
 
-        processPDF(fileByteArray);
-
+        processPDF(fileByteArray)
     }
 
     async function processPDF(fileByteArray) {
         // html general
 
         // init library
-        console.log('Initializing library...');
+        console.log("Initializing library...")
 
-        FPDF.Init();
+        FPDF.Init()
 
-
-
-        console.log("File size: " + fileByteArray.length + " bytes");
+        console.log("File size: " + fileByteArray.length + " bytes")
 
         // load document to memory
-        console.log('Loading data to buffer...');
+        console.log("Loading data to buffer...")
 
-        let wasmBuffer = Module._malloc(fileByteArray.length);
-        Module.HEAPU8.set(fileByteArray, wasmBuffer);
+        let wasmBuffer = Module._malloc(fileByteArray.length)
+        Module.HEAPU8.set(fileByteArray, wasmBuffer)
 
         // create document
-        console.log('Loading document...');
+        console.log("Loading document...")
 
         const doc = FPDF.LoadMemDocument(wasmBuffer, fileByteArray.length, "")
 
-
-
-
-
         // check last error
-        let lastError = getLastError();
-        console.log("Load document state: " + lastError);
+        let lastError = getLastError()
+        console.log("Load document state: " + lastError)
 
         // count page
 
-        let page_count = FPDF.GetPageCount(doc);
+        let page_count = FPDF.GetPageCount(doc)
 
-
-        console.log('Pages: ' + page_count);
-
+        console.log("Pages: " + page_count)
 
         const page_array = []
 
-
-
-
         for (let x = 0; x < page_count; x++) {
+            console.log("Page " + (x + 1))
 
-            console.log('Page ' + (x + 1));
-
-
-            
-            render(doc, x, scale = 2).toBlob(b => {
-
-
+            render(doc, x, (scale = 2)).toBlob(b => {
                 const url = URL.createObjectURL(b)
-                console.log('Page '+(x+1), url)
+                console.log("Page " + (x + 1), url)
 
-                var img = document.createElement('img');
-                img.setAttribute('src', url)
-                document.body.appendChild(img);
-
+                var img = document.createElement("img")
+                img.setAttribute("src", url)
+                document.body.appendChild(img)
             })
         }
 
         // clean memory
-        console.log('Cleaning objects...');
+        console.log("Cleaning objects...")
 
+        Module._free(wasmBuffer)
 
-
-
-        Module._free(wasmBuffer);
-
-        FPDF.CloseDocument(doc);
-        FPDF.DestroyLibrary();
-        console.log('Finished');
-
-
+        FPDF.CloseDocument(doc)
+        FPDF.DestroyLibrary()
+        console.log("Finished")
     }
 
+    loadFileFromURL("https://pdf-lib.js.org/assets/dod_character.pdf")
+})
 
-    loadFileFromURL('https://pdf-lib.js.org/assets/dod_character.pdf')
-
-});
 
 </script>
