@@ -167,10 +167,10 @@ function initializeFPDF() {
     }
 }
 
-function getLastError() {
-    let lastError = FPDF.FPDF_GetLastError()
+function get_last_error() {
+    let last_error = FPDF.FPDF_GetLastError()
 
-    switch (lastError) {
+    switch (last_error) {
         case FPDF.LAST_ERROR.SUCCESS:
             return "success"
             break
@@ -197,7 +197,7 @@ function getLastError() {
     }
 }
 
-function getPageSize(doc, i, s = 2) {
+function get_page_size(doc, i, s = 2) {
     return H(
         Float64Array,
         2,
@@ -213,7 +213,7 @@ function get_box(doc, page, box) {
     )((a, b, c, d) => FPDF.boxes[box](page, a, b, c, d)).map(v => v)
 }
 
-function getPageBitmap(doc, i, w, h) {
+function get_page_bitmap(doc, i, w, h) {
     const pageRenderPtr = Module._malloc(w * h * 4)
 
     for (let i = 0; i < w * h * 4; i++) {
@@ -244,8 +244,8 @@ function getPageBitmap(doc, i, w, h) {
 }
 
 function render(doc, i = 0, scale = 1.0) {
-    const [w, h] = getPageSize(doc, i, scale)
-    const raster = getPageBitmap(doc, i, w, h)
+    const [w, h] = get_page_size(doc, i, scale)
+    const raster = get_page_bitmap(doc, i, w, h)
 
     const canvas = document.createElement("canvas")
     canvas.width = w
@@ -263,22 +263,13 @@ function render(doc, i = 0, scale = 1.0) {
 }
 
 // runtime initialized
-PDFiumModule().then(function (pdfiumModule) {
-    Module = pdfiumModule
+PDFiumModule().then(function (m) {
+    Module = m
 
     initializeFPDF()
 
-    console.log("load")
 
-    async function loadFileFromURL(url) {
-        let response = await fetch(url)
-        let fileBuffer = await response.arrayBuffer()
-        let fileByteArray = new Uint8Array(fileBuffer)
-
-        processPDF(fileByteArray)
-    }
-
-    async function processPDF(fileByteArray) {
+    function process_pdf_from_bytes(bytearray) {
         // html general
 
         // init library
@@ -286,22 +277,22 @@ PDFiumModule().then(function (pdfiumModule) {
 
         FPDF.PDFium_Init()
 
-        console.log("File size: " + fileByteArray.length + " bytes")
+        console.log("File size: " + bytearray.length + " bytes")
 
         // load document to memory
         console.log("Loading data to buffer...")
 
-        let wasmBuffer = Module._malloc(fileByteArray.length)
-        Module.HEAPU8.set(fileByteArray, wasmBuffer)
+        const buffer = Module._malloc(bytearray.length)
+        Module.HEAPU8.set(bytearray, buffer)
 
         // create document
         console.log("Loading document...")
 
-        const doc = FPDF.FPDF_LoadMemDocument(wasmBuffer, fileByteArray.length, "")
+        const doc = FPDF.FPDF_LoadMemDocument(buffer, bytearray.length, "")
 
         // check last error
-        let lastError = getLastError()
-        console.log("Load document state: " + lastError)
+        let last_error = get_last_error()
+        console.log("Load document state: " + last_error)
 
         // count page
 
@@ -327,14 +318,20 @@ PDFiumModule().then(function (pdfiumModule) {
         // clean memory
         console.log("Cleaning objects...")
 
-        Module._free(wasmBuffer)
+        Module._free(buffer)
 
         FPDF.FPDF_CloseDocument(doc)
         FPDF.FPDF_DestroyLibrary()
         console.log("Finished")
     }
 
-    loadFileFromURL("https://pdf-lib.js.org/assets/dod_character.pdf")
+
+    function process_pdf_from_url(url) {
+        return fetch(url).then(r => r.arrayBuffer()).then(r => new Uint8Array(r)).then(r => process_pdf_from_bytes(r))
+    }
+
+
+    process_pdf_from_url("https://pdf-lib.js.org/assets/dod_character.pdf")
 })
 
 
