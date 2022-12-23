@@ -166,7 +166,7 @@ PDFiumModule().then(WASM => {
 
     
     function get_last_error() {
-        let last_error = FPDF.FPDF_GetLastError()
+        const last_error = FPDF.FPDF_GetLastError()
 
         switch (last_error) {
             case FPDF.LAST_ERROR.SUCCESS:
@@ -230,7 +230,7 @@ PDFiumModule().then(WASM => {
         FPDF.FPDFBitmap_Destroy(bmap)
         FPDF.FPDF_ClosePage(page)
 
-        let raster = []
+        const raster = []
 
         for (let v = 0; v < w * h * 4; v++) {
             raster.push(WASM.HEAPU8[pageRenderPtr + v])
@@ -284,12 +284,12 @@ PDFiumModule().then(WASM => {
         const doc = FPDF.FPDF_LoadMemDocument(buffer, bytearray.length, "")
 
         // check last error
-        let last_error = get_last_error()
+        const last_error = get_last_error()
         console.log("Load document state: " + last_error)
 
         // count page
 
-        let page_count = FPDF.FPDF_GetPageCount(doc)
+        const page_count = FPDF.FPDF_GetPageCount(doc)
 
         console.log("Pages: " + page_count)
 
