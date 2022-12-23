@@ -3,18 +3,8 @@
 
 <script>
 
-// variables
-let currentPageIndex = 1;
-let pageLoaded = false;
-let moduleLoaded = false;
-let debugMode = false;
-let autoOpenMode = true;
-let doc;
-let FPDF = {};
 let Module = null;
-
-// pdfium initialization
-Object.assign(FPDF, {
+const FPDF = {
     ANNOT: 0x01, // Set if annotations are to be rendered.
     LCD_TEXT: 0x02, // Set if using text rendering optimized for LCD display.
     NO_NATIVETEXT: 0x04, // Don't use the native text output available on some platforms
@@ -38,17 +28,8 @@ Object.assign(FPDF, {
         SECURITY: 5,
         PAGE: 6
     }
-});
+};
 
-const I8 = Int8Array;
-const I16 = Int16Array;
-const I32 = Int32Array;
-const U8 = Uint8Array;
-const CH = U8;
-const U16 = Uint16Array;
-const U32 = Uint32Array;
-const F32 = Float32Array;
-const F64 = Float64Array;
 
 
 const heap = (J, s) => {
@@ -134,7 +115,13 @@ function initializeFPDF() {
     FPDF.CloseDocument = Module.cwrap('FPDF_CloseDocument', '', ['number']);
     FPDF.DestroyLibrary = Module.cwrap('FPDF_DestroyLibrary');
 
-    //FPDF.GetTrimBox = Module.cwrap('FPDFPage_GetTrimBox');
+
+    FPDF.boxes = {
+        'bleed': Module.cwrap('FPDFPage_GetBleedBox', 'number', ['number', 'number', 'number', 'number', 'number']),
+        'media': Module.cwrap('FPDFPage_GetMediaBox', 'number', ['number', 'number', 'number', 'number', 'number']),
+        'crop':  Module.cwrap('FPDFPage_GetCropBox',  'number', ['number', 'number', 'number', 'number', 'number']),
+    }
+
 
 }
 
@@ -171,8 +158,13 @@ function getLastError() {
 
 
 function getPageSize(doc, i, s = 2) {
-        return H(F64, 2, [-1, -1])((w, h) => FPDF.GetPageSizeByIndex(doc, i, w, h)).map(v => parseInt(v) * s);
-    }
+    return H(Float64Array, 2, [-1, -1])((w, h) => FPDF.GetPageSizeByIndex(doc, i, w, h)).map(v => parseInt(v) * s);
+}
+
+function get_box(doc, page, box) {
+    return H(Float32Array, 4, [-1, -1])((a, b, c, d) => FPDF.boxes[box](page, a, b, c, d)).map(v => v);
+}
+
 
 
 function getPageBitmap(doc, i, w, h) {
@@ -185,6 +177,10 @@ function getPageBitmap(doc, i, w, h) {
 
     const bmap = FPDF.Bitmap_CreateEx(w, h, FPDF.Bitmap_BGRA, pageRenderPtr, w * 4);
     const page = FPDF.LoadPage(doc, i);
+
+    console.log('bleed', get_box(doc, page, 'bleed'))
+    console.log('media', get_box(doc, page, 'media'))
+    console.log('crop', get_box(doc, page, 'crop'))
 
     FPDF.Bitmap_FillRect(bmap, 0, 0, w, h, 0xFFFFFFFF);
     FPDF.RenderPageBitmap(bmap, page, 0, 0, w, h, 0, FPDF.REVERSE_BYTE_ORDER | FPDF.ANNOT);
@@ -227,8 +223,6 @@ function render(doc, i = 0, scale = 1.0) {
 // runtime initialized
 PDFiumModule().then(function(pdfiumModule) {
     Module = pdfiumModule;
-
-    moduleLoaded = true;
 
     initializeFPDF()
 
