@@ -241,23 +241,12 @@ PDFiumModule().then(WASM => {
         return raster
     }
 
-    function render(doc, i = 0, scale = 1.0) {
+    function render_to_imagedata(doc, i = 0, scale = 1.0) {
         const [w, h] = get_page_size(doc, i, scale)
         const raster = get_page_bitmap(doc, i, w, h)
-
-        const canvas = document.createElement("canvas")
-        canvas.width = w
-        canvas.height = h
-
-        const context = canvas.getContext("2d")
-
-        //const i = x.createImageData(w, h);
         const image = new ImageData(w, h)
-
         image.data.set(raster)
-        context.putImageData(image, 0, 0)
-
-        return canvas
+        return image
     }
 
 
@@ -296,16 +285,23 @@ PDFiumModule().then(WASM => {
         const page_array = []
 
         for (let x = 0; x < page_count; x++) {
+
             console.log("Page " + (x + 1))
 
-            render(doc, x, 2).toBlob(b => {
+            const image = render_to_imagedata(doc, x, 2)
+            const canvas = document.createElement("canvas")
+
+            canvas.width = image.width
+            canvas.height = image.height
+            canvas.getContext("2d").putImageData(image, 0, 0)
+
+            canvas.toBlob(b => {
                 const url = URL.createObjectURL(b)
                 console.log("Page " + (x + 1), url)
-
-                var img = document.createElement("img")
-                img.setAttribute("src", url)
-                document.body.appendChild(img)
             })
+
+            document.body.appendChild(canvas)
+
         }
 
         // clean memory
