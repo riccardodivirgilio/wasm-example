@@ -298,7 +298,7 @@ PDFiumModule().then(WASM => {
         for (let x = 0; x < page_count; x++) {
             console.log("Page " + (x + 1))
 
-            render(doc, x, (scale = 2)).toBlob(b => {
+            render(doc, x, 2).toBlob(b => {
                 const url = URL.createObjectURL(b)
                 console.log("Page " + (x + 1), url)
 
