@@ -170,67 +170,58 @@ function getLastError() {
 }
 
 
-class Processor {
-    constructor(doc) {
-        this.doc = doc;
-    }
-
-    getPageSize(i = 0, s = 2) {
-        return H(F64, 2, [-1, -1])((w, h) => FPDF.GetPageSizeByIndex(this.doc, i, w, h)).map(v => parseInt(v) * s);
+function getPageSize(doc, i, s = 2) {
+        return H(F64, 2, [-1, -1])((w, h) => FPDF.GetPageSizeByIndex(doc, i, w, h)).map(v => parseInt(v) * s);
     }
 
 
-    getPageRender(i = 0, w, h) {
+function getPageBitmap(doc, i, w, h) {
 
-        const pageRenderPtr = Module._malloc(w * h * 4);
+    const pageRenderPtr = Module._malloc(w * h * 4);
 
-        for (let i = 0; i < w * h * 4; i++) {
-            Module.HEAPU8[pageRenderPtr + i] = 0;
-        }
-
-        const bmap = FPDF.Bitmap_CreateEx(w, h, FPDF.Bitmap_BGRA, pageRenderPtr, w * 4);
-        const page = FPDF.LoadPage(this.doc, i);
-
-        FPDF.Bitmap_FillRect(bmap, 0, 0, w, h, 0xFFFFFFFF);
-        FPDF.RenderPageBitmap(bmap, page, 0, 0, w, h, 0, FPDF.REVERSE_BYTE_ORDER | FPDF.ANNOT);
-        FPDF.Bitmap_Destroy(bmap);
-        FPDF.ClosePage(page);
-
-
-        let raster = [];
-
-        for (let v = 0; v < w * h * 4; v++) {
-            raster.push(Module.HEAPU8[pageRenderPtr + v]);
-        }
-
-        Module._free(pageRenderPtr);
-
-        return raster;
+    for (let i = 0; i < w * h * 4; i++) {
+        Module.HEAPU8[pageRenderPtr + i] = 0;
     }
 
-    render(i = 0, scale = 1.0) {
+    const bmap = FPDF.Bitmap_CreateEx(w, h, FPDF.Bitmap_BGRA, pageRenderPtr, w * 4);
+    const page = FPDF.LoadPage(doc, i);
+
+    FPDF.Bitmap_FillRect(bmap, 0, 0, w, h, 0xFFFFFFFF);
+    FPDF.RenderPageBitmap(bmap, page, 0, 0, w, h, 0, FPDF.REVERSE_BYTE_ORDER | FPDF.ANNOT);
+    FPDF.Bitmap_Destroy(bmap);
+    FPDF.ClosePage(page);
 
 
-        
-        const [w, h] = this.getPageSize(i, scale);
-        const raster = this.getPageRender(i, w, h);
+    let raster = [];
 
-        const canvas = document.createElement('canvas');
-        canvas.width = w;
-        canvas.height = h;
-
-        const context = canvas.getContext('2d');
-
-
-        //const i = x.createImageData(w, h);
-        const image = new ImageData(w, h);
-
-        image.data.set(raster);
-        context.putImageData(image, 0, 0);
-
-        return canvas
+    for (let v = 0; v < w * h * 4; v++) {
+        raster.push(Module.HEAPU8[pageRenderPtr + v]);
     }
 
+    Module._free(pageRenderPtr);
+
+    return raster;
+}
+
+function render(doc, i = 0, scale = 1.0) {
+    
+    const [w, h] = getPageSize(doc, i, scale);
+    const raster = getPageBitmap(doc, i, w, h);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+
+    const context = canvas.getContext('2d');
+
+
+    //const i = x.createImageData(w, h);
+    const image = new ImageData(w, h);
+
+    image.data.set(raster);
+    context.putImageData(image, 0, 0);
+
+    return canvas
 }
 
 // runtime initialized
@@ -277,7 +268,6 @@ PDFiumModule().then(function(pdfiumModule) {
         const doc = FPDF.LoadMemDocument(wasmBuffer, fileByteArray.length, "")
 
 
-        const processor = new Processor(doc, wasmBuffer)
 
 
 
@@ -304,7 +294,7 @@ PDFiumModule().then(function(pdfiumModule) {
 
 
             
-            processor.render(x, scale = 2).toBlob(b => {
+            render(doc, x, scale = 2).toBlob(b => {
 
 
                 const url = URL.createObjectURL(b)
