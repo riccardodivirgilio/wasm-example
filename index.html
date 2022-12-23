@@ -139,6 +139,35 @@ function initializeFPDF() {
 }
 
 
+function getLastError() {
+    let lastError = FPDF.GetLastError();
+
+    switch (lastError) {
+        case FPDF.LAST_ERROR.SUCCESS:
+            return "success";
+            break;
+        case FPDF.LAST_ERROR.UNKNOWN:
+            return "unknown error";
+            break;
+        case FPDF.LAST_ERROR.FILE:
+            return "file not found or could not be opened";
+            break;
+        case FPDF.LAST_ERROR.FORMAT:
+            return "file not in PDF format or corrupted";
+            break;
+        case FPDF.LAST_ERROR.PASSWORD:
+            return "password required or incorrect password";
+            break;
+        case FPDF.LAST_ERROR.SECURITY:
+            return "unsupported security scheme";
+            break;
+        case FPDF.LAST_ERROR.PAGE:
+            return "page not found or content error";
+            break;
+        default:
+            return "unknown error";
+    }
+}
 
 
 class Processor {
@@ -150,16 +179,16 @@ class Processor {
         return H(F64, 2, [-1, -1])((w, h) => FPDF.GetPageSizeByIndex(this.doc, i, w, h)).map(v => parseInt(v) * s);
     }
 
-    getRender(i = 0, w, h) {
 
+    getPageRender(i = 0, w, h) {
 
-        const heap = Module._malloc(w * h * 4);
+        const pageRenderPtr = Module._malloc(w * h * 4);
 
         for (let i = 0; i < w * h * 4; i++) {
-            Module.HEAPU8[heap + i] = 0;
+            Module.HEAPU8[pageRenderPtr + i] = 0;
         }
 
-        const bmap = FPDF.Bitmap_CreateEx(w, h, FPDF.Bitmap_BGRA, heap, w * 4);
+        const bmap = FPDF.Bitmap_CreateEx(w, h, FPDF.Bitmap_BGRA, pageRenderPtr, w * 4);
         const page = FPDF.LoadPage(this.doc, i);
 
         FPDF.Bitmap_FillRect(bmap, 0, 0, w, h, 0xFFFFFFFF);
@@ -167,75 +196,41 @@ class Processor {
         FPDF.Bitmap_Destroy(bmap);
         FPDF.ClosePage(page);
 
-        return heap;
-    }
 
-    getPageRender(n = 0, w, h) {
-        let pageRenderPtr = this.getRender(n, w, h);
-        let pageRenderData = [];
+        let raster = [];
 
         for (let v = 0; v < w * h * 4; v++) {
-            pageRenderData.push(Module.HEAPU8[pageRenderPtr + v]);
+            raster.push(Module.HEAPU8[pageRenderPtr + v]);
         }
 
         Module._free(pageRenderPtr);
 
-        return pageRenderData;
+        return raster;
     }
 
-    render(n = 0, scale = 1.0) {
+    render(i = 0, scale = 1.0) {
 
 
         
-        const [w, h] = this.getPageSize(n, scale);
-        const data = this.getPageRender(n, w, h);
+        const [w, h] = this.getPageSize(i, scale);
+        const raster = this.getPageRender(i, w, h);
 
         const canvas = document.createElement('canvas');
         canvas.width = w;
         canvas.height = h;
 
-        const x = canvas.getContext('2d');
+        const context = canvas.getContext('2d');
 
-        console.log('getContext', x)
 
         //const i = x.createImageData(w, h);
-        const i = new ImageData(w, h);
+        const image = new ImageData(w, h);
 
-        i.data.set(data);
-        x.putImageData(i, 0, 0);
+        image.data.set(raster);
+        context.putImageData(image, 0, 0);
 
         return canvas
     }
 
-    getLastError() {
-        let lastError = FPDF.GetLastError();
-
-        switch (lastError) {
-            case FPDF.LAST_ERROR.SUCCESS:
-                return "success";
-                break;
-            case FPDF.LAST_ERROR.UNKNOWN:
-                return "unknown error";
-                break;
-            case FPDF.LAST_ERROR.FILE:
-                return "file not found or could not be opened";
-                break;
-            case FPDF.LAST_ERROR.FORMAT:
-                return "file not in PDF format or corrupted";
-                break;
-            case FPDF.LAST_ERROR.PASSWORD:
-                return "password required or incorrect password";
-                break;
-            case FPDF.LAST_ERROR.SECURITY:
-                return "unsupported security scheme";
-                break;
-            case FPDF.LAST_ERROR.PAGE:
-                return "page not found or content error";
-                break;
-            default:
-                return "unknown error";
-        }
-    }
 }
 
 // runtime initialized
@@ -287,7 +282,7 @@ PDFiumModule().then(function(pdfiumModule) {
 
 
         // check last error
-        let lastError = processor.getLastError();
+        let lastError = getLastError();
         console.log("Load document state: " + lastError);
 
         // count page
