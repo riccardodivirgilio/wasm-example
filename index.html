@@ -32,6 +32,20 @@ PDFiumModule().then(WASM => {
             PAGE: 6
         },
         PDFium_Init : WASM.cwrap("PDFium_Init"),
+
+
+        FPDF_ImportPagesByIndex: WASM.cwrap("FPDF_ImportPagesByIndex", "", [
+
+            "number",
+            "number",
+            "string",
+            "number",
+        ]),
+
+        FPDF_CreateNewDocument: WASM.cwrap("FPDF_CreateNewDocument", "", [
+        ]),
+
+
         FPDF_RenderPageBitmap : WASM.cwrap("FPDF_RenderPageBitmap", "", [
             "number",
             "number",
@@ -303,6 +317,26 @@ PDFiumModule().then(WASM => {
             document.body.appendChild(canvas)
 
         }
+
+
+        for (let i = 0; i < page_count; i++) {
+
+            // logic for splitting pdf in pages
+
+            const page = page_array[i]
+
+            const pagedoc = FPDF.FPDF_CreateNewDocument()
+            FPDF.FPDF_ImportPagesByIndex(pagedoc, doc, `${i + 1}`, 0)
+
+            // how do I save this file now?!?
+            
+            console.log('New single page document created', pagedoc)
+
+            FPDF.FPDF_CloseDocument(pagedoc)
+
+
+        }
+
 
         // clean memory
         console.log("Cleaning objects...")
