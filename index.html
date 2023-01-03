@@ -296,6 +296,26 @@ PDFiumModule().then(WASM => {
 
         console.log("Pages: " + page_count)
 
+        // saving pages as pdf
+
+        for (let i = 0; i < page_count; i++) {
+
+            // logic for splitting pdf in pages
+
+            const pagedoc = FPDF.FPDF_CreateNewDocument()
+            FPDF.FPDF_ImportPagesByIndex(pagedoc, doc, `${i + 1}`, 0)
+
+            // how do I save this file now?!?
+            
+            console.log('New single page document created', pagedoc)
+
+            FPDF.FPDF_CloseDocument(pagedoc)
+
+
+        }
+
+        // saving pages as images
+
         const page_array = []
 
         for (let x = 0; x < page_count; x++) {
@@ -318,24 +338,6 @@ PDFiumModule().then(WASM => {
 
         }
 
-
-        for (let i = 0; i < page_count; i++) {
-
-            // logic for splitting pdf in pages
-
-            const page = page_array[i]
-
-            const pagedoc = FPDF.FPDF_CreateNewDocument()
-            FPDF.FPDF_ImportPagesByIndex(pagedoc, doc, `${i + 1}`, 0)
-
-            // how do I save this file now?!?
-            
-            console.log('New single page document created', pagedoc)
-
-            FPDF.FPDF_CloseDocument(pagedoc)
-
-
-        }
 
 
         // clean memory
